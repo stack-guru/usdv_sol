@@ -35,6 +35,7 @@ pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
         burn_authority.key() == *ctx.program_id,
         CustomError::Unauthorized
     );
+    let seeds: &[&[u8]] = &[b"burn_authority", &[ctx.bumps.burn_authority]];
 
     let cpi_ctx = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
@@ -45,7 +46,7 @@ pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
         },
     );
 
-    burn(cpi_ctx, amount)?;
+    burn(cpi_ctx.with_signer(&[seeds]), amount)?;
 
     msg!("Successfully burned {} wUSDV", amount);
     Ok(())

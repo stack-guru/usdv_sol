@@ -30,8 +30,12 @@ pub struct BurnWusdv<'info> {
     #[account(mut,constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
     pub token_mint: Account<'info, Mint>, // Wrapped USDV mint account
 
-    /// CHECK: This is verified manually in the handler
-    pub burn_authority: AccountInfo<'info>, // Should be the program id
+    #[account(
+        seeds = [b"burn_authority"], // use your actual seeds here
+        bump
+    )]
+    /// CHECK: This is verified by seeds + bump
+    pub burn_authority: AccountInfo<'info>,
 
     pub token_program: Program<'info, Token>,
 }

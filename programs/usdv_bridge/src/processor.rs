@@ -31,7 +31,7 @@ pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
         Burn {
             mint: ctx.accounts.token_mint.to_account_info(),
             from: ctx.accounts.user_token_account.to_account_info(),
-            authority: ctx.accounts.user.to_account_info(), // << user is authority
+            authority: ctx.accounts.user.to_account_info(), // now signer is authority
         },
     );
 

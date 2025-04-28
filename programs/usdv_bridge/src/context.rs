@@ -26,16 +26,13 @@ pub struct MintWusdv<'info> {
 #[derive(Accounts)]
 pub struct BurnWusdv<'info> {
     #[account(mut)]
-    pub user: Signer<'info>, // The owner of the token account (user)
+    pub user: Signer<'info>, // signer, but not checking token account owner
 
-    #[account(
-        mut,
-        constraint = user_token_account.owner == user.key() @ CustomError::InvalidTokenAccountOwner,
-    )]
-    pub user_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>, // token account to burn from
 
     #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
-    pub token_mint: Account<'info, Mint>,
+    pub token_mint: Account<'info, Mint>, // the token mint
 
     pub token_program: Program<'info, Token>,
 }

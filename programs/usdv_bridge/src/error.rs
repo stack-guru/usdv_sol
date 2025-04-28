@@ -7,7 +7,4 @@ pub enum CustomError {
 
     #[msg("Mint has invalid decimals.")]
     InvalidMintDecimals,
-
-    #[msg("The owner of the token account does not match the provided user.")]
-    InvalidTokenAccountOwner,
 }

@@ -13,6 +13,10 @@ pub struct MintWusdv<'info> {
     #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
     pub token_mint: Account<'info, Mint>,
 
+    #[account(
+        seeds = [b"mint_authority"], // use your actual seeds here
+        bump
+    )]
     /// CHECK: This will be verified in the handler
     pub mint_authority: AccountInfo<'info>,
 
@@ -22,20 +26,16 @@ pub struct MintWusdv<'info> {
 #[derive(Accounts)]
 pub struct BurnWusdv<'info> {
     #[account(mut)]
-    pub user: Signer<'info>, // User who is redeeming
-
-    #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>, // User's token account on Solana
-
-    #[account(mut,constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
-    pub token_mint: Account<'info, Mint>, // Wrapped USDV mint account
+    pub user: Signer<'info>, // The owner of the token account (user)
 
     #[account(
-        seeds = [b"burn_authority"], // use your actual seeds here
-        bump
+        mut,
+        constraint = user_token_account.owner == user.key() @ CustomError::InvalidTokenAccountOwner,
     )]
-    /// CHECK: This is verified by seeds + bump
-    pub burn_authority: AccountInfo<'info>,
+    pub user_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
+    pub token_mint: Account<'info, Mint>,
 
     pub token_program: Program<'info, Token>,
 }

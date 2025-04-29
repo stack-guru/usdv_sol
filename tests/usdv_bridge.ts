@@ -4,10 +4,14 @@ import { UsdvBridge } from "../target/types/usdv_bridge";
 import {
   createMint,
   createAssociatedTokenAccount,
+  getOrCreateAssociatedTokenAccount,
   getAccount,
   mintTo,
 } from "@solana/spl-token";
 import { assert } from "chai";
+import { PublicKey } from "@solana/web3.js"; // Import if you haven't
+
+const EXISTING_MINT = new PublicKey("CUeFA3eTUcKCctTWuieMXLvn9ChAaMi5z6QhLRzJL3qn");
 
 describe("usdv_bridge", () => {
   // Set up Anchor provider
@@ -36,23 +40,26 @@ describe("usdv_bridge", () => {
       program.programId
     );
 
-    // Create mint with PDA as authority
-    mint = await createMint(
-      provider.connection,
-      wallet.payer,
-      mintAuthorityPda, // PDA as mint authority
-      null,
-      6
-    );
+    // // Create mint with PDA as authority
+    // mint = await createMint(
+    //   provider.connection,
+    //   wallet.payer,
+    //   mintAuthorityPda, // PDA as mint authority
+    //   null,
+    //   6
+    // );
+
+    mint = EXISTING_MINT;
 
     // Create user's associated token account for the mint
-    userTokenAccount = await createAssociatedTokenAccount(
+    const userTokenAccountInfo  = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       wallet.payer,
       mint,
       wallet.publicKey
     );
 
+    userTokenAccount = userTokenAccountInfo.address;
     // // Fund the user's token account with some tokens to burn
     // const amount = 1_000_000; // 1 token with 6 decimals
     // await mintTo(

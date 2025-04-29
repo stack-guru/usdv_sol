@@ -4,14 +4,14 @@
 seeds = false
 skip-lint = false
 
-[programs.localnet]
-usdv_bridge = "EjqTB7zPPHb26icpdv1Si1uYzE7WpNweRe4XyeXphC2Z"
+[programs.devnet]
+usdv_bridge = "G3Do6ZuHbZbEruQTwcwY5Vdu35JPnbLHpvaVEtviWwbR"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/home/seal/.config/solana/id.json"
 
 [scripts]

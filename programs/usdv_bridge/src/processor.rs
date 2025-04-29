@@ -1,6 +1,5 @@
 use crate::{
     context::{BurnWusdv, MintWusdv},
-    state::CustomError,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token::{mint_to, MintTo, Burn, burn};

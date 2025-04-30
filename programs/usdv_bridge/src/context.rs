@@ -1,6 +1,8 @@
 use crate::error::CustomError;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use wormhole_anchor_sdk::wormhole::program::*;
+use wormhole_anchor_sdk::wormhole::BridgeData;
 
 #[derive(Accounts)]
 pub struct MintWusdv<'info> {
@@ -35,4 +37,34 @@ pub struct BurnWusdv<'info> {
     pub token_mint: Account<'info, Mint>, // the token mint
 
     pub token_program: Program<'info, Token>,
+
+    // ✅ Wormhole required accounts
+    /// CHECK: verified via CPI
+    pub wormhole_program: AccountInfo<'info>,
+
+    /// CHECK: Wormhole config account (get from the Wormhole docs / IDL)
+    pub wormhole_config: AccountInfo<'info>,
+
+    /// CHECK: Will be created if doesn't exist, needs to be mutable
+    #[account(mut)]
+    pub wormhole_message: AccountInfo<'info>,
+
+    /// CHECK: Must be a PDA from your program (emitter)
+    #[account(seeds = [b"emitter"], bump)]
+    pub wormhole_emitter: AccountInfo<'info>,
+
+    /// CHECK: Tracks message sequence
+    #[account(mut)]
+    pub wormhole_sequence: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub wormhole_payer: Signer<'info>,
+
+    /// CHECK: Wormhole fee collector (use address from Wormhole docs)
+    #[account(mut)]
+    pub wormhole_fee_collector: AccountInfo<'info>,
+
+    pub clock: Sysvar<'info, Clock>,
+    pub rent: Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
 }

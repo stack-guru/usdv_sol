@@ -17,7 +17,7 @@ pub mod usdv_bridge {
         processor::mint_wusdv(ctx, amount)
     }
 
-    pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
-        processor::burn_wusdv(ctx, amount)
+    pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey) -> Result<()> {
+        processor::burn_wusdv(ctx, amount, recipient)
     }
 }

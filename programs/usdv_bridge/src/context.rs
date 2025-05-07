@@ -1,8 +1,6 @@
 use crate::error::CustomError;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use wormhole_anchor_sdk::wormhole::program::*;
-use wormhole_anchor_sdk::wormhole::BridgeData;
 
 #[derive(Accounts)]
 pub struct MintWusdv<'info> {
@@ -26,6 +24,7 @@ pub struct MintWusdv<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(nonce: u8)]
 pub struct BurnWusdv<'info> {
     #[account(mut)]
     pub user: Signer<'info>, // signer, but not checking token account owner
@@ -45,8 +44,13 @@ pub struct BurnWusdv<'info> {
     /// CHECK: Wormhole config account (get from the Wormhole docs / IDL)
     pub wormhole_config: AccountInfo<'info>,
 
-    /// CHECK: Will be created if doesn't exist, needs to be mutable
-    #[account(mut)]
+    #[account(
+        init,
+        payer = wormhole_payer,
+        space = 1000, // or VAA_MAX_SIZE, typically ~1000
+        seeds = [b"message", user.key().as_ref(), &[nonce]], // Optional nonce or similar seed
+        bump
+    )]
     pub wormhole_message: AccountInfo<'info>,
 
     /// CHECK: Must be a PDA from your program (emitter)

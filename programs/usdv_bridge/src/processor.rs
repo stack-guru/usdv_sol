@@ -24,7 +24,7 @@ pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {
     Ok(())
 }
 
-pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey) -> Result<()> {
+pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey, nonce: u8) -> Result<()> {
     let cpi_ctx = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         Burn {
@@ -45,6 +45,7 @@ pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey) -> Re
     let payload = BurnPayload { amount, recipient: recipient_address };
 
     let payload_bytes = payload.try_to_vec()?; // serialize to Vec<u8>
+    let payload_bytes_clone = payload_bytes.clone(); // clone for logging
 
     // Wormhole post_message call
     post_message(
@@ -67,6 +68,7 @@ pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey) -> Re
         payload_bytes,             // serialized payload
         Finality::Confirmed, // finality level
     )?;
+    msg!("Sent message to Wormhole with payload: {:?}", payload_bytes_clone);
 
     Ok(())
 }

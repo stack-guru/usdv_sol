@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use context::*;
-use processor::{mint_wusdv, burn_wusdv};
 
 pub mod error;
 pub mod state;
@@ -17,7 +16,7 @@ pub mod usdv_bridge {
         processor::mint_wusdv(ctx, amount)
     }
 
-    pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey) -> Result<()> {
-        processor::burn_wusdv(ctx, amount, recipient)
+    pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey, nonce: u8) -> Result<()> {
+        processor::burn_wusdv(ctx, amount, recipient, nonce)
     }
 }

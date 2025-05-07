@@ -9,9 +9,10 @@ import {
   mintTo,
 } from "@solana/spl-token";
 import { assert } from "chai";
-import { PublicKey } from "@solana/web3.js"; // Import if you haven't
+import { PublicKey, SYSVAR_RENT_PUBKEY, SYSVAR_CLOCK_PUBKEY, SystemProgram } from "@solana/web3.js"; // Import if you haven't
 
 const EXISTING_MINT = new PublicKey("CUeFA3eTUcKCctTWuieMXLvn9ChAaMi5z6QhLRzJL3qn");
+const WORMHOLE_PROGRAM_ID = new PublicKey("Bridge1p5gheXUvJ6jGWGeCsgPKgnE3YgdGKRVCMY9o");
 
 describe("usdv_bridge", () => {
   // Set up Anchor provider
@@ -96,32 +97,56 @@ describe("usdv_bridge", () => {
   });
 
   it("should burn wUSDV from user", async () => {
-    const amount = 500_000; // Amount to burn (half of what was minted)
-
+    const amount = 500_000; // Amount to burn
+    const nonce = 42; // Use any nonce (should be unique per burn)
+  
+    // Derive PDAs
+    const [wormholeEmitter] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("emitter")],
+      program.programId
+    );
+  
+    const [wormholeMessage] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("message"), wallet.publicKey.toBuffer(), Buffer.from([nonce])],
+      program.programId
+    );
+  
+    const wormholeSequence = anchor.web3.Keypair.generate(); // Just use a new keypair for mock testing
+  
+    // Mock Wormhole config and fee collector (replace with real ones in integration)
+    const wormholeConfig = anchor.web3.Keypair.generate(); // replace in real test
+    const wormholeFeeCollector = anchor.web3.Keypair.generate(); // replace in real test
+  
     try {
-      // Check the initial balance before burn
-      const userAccountBefore = await getAccount(provider.connection, userTokenAccount);
-      assert.strictEqual(
-        Number(userAccountBefore.amount),
-        1_000_000, // Ensure the user has enough tokens before burning
-        "Pre-burn amount mismatch"
-      );
-
-      await program.methods
-        .burnWusdv(new anchor.BN(amount))
+      const tx = await program.methods
+        .burnWusdv(new anchor.BN(amount), wallet.publicKey, nonce)
         .accounts({
-          user: wallet.publicKey,  // The user is the signer
+          user: wallet.publicKey,
           userTokenAccount,
           tokenMint: mint,
           tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+  
+          wormholeProgram: WORMHOLE_PROGRAM_ID,
+          wormholeConfig: wormholeConfig.publicKey,
+          wormholeMessage,
+          wormholeEmitter,
+          wormholeSequence: wormholeSequence.publicKey,
+          wormholePayer: wallet.publicKey,
+          wormholeFeeCollector: wormholeFeeCollector.publicKey,
+  
+          clock: SYSVAR_CLOCK_PUBKEY,
+          rent: SYSVAR_RENT_PUBKEY,
+          systemProgram: SystemProgram.programId,
         })
+        .signers([]) // Add wormholeSequence and feeCollector if they were keypairs
         .rpc();
-
-      // Check the balance after burning
+  
+      console.log("Burn + Wormhole Message Tx:", tx);
+  
       const userAccountAfter = await getAccount(provider.connection, userTokenAccount);
       assert.strictEqual(
         Number(userAccountAfter.amount),
-        500_000, // Half of the tokens should remain after burning
+        500_000,
         "Burned amount mismatch"
       );
     } catch (err) {

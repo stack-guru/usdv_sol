@@ -44,6 +44,7 @@ pub struct BurnWusdv<'info> {
     /// CHECK: Wormhole config account (get from the Wormhole docs / IDL)
     pub wormhole_config: AccountInfo<'info>,
 
+    /// CHECK: This is a Wormhole message account initialized in this instruction; its validity is ensured by the program logic.
     #[account(
         init,
         payer = wormhole_payer,

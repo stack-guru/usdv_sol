@@ -1,4 +1,5 @@
 use crate::error::CustomError;
+use crate::state::NonceAccount;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
@@ -24,7 +25,6 @@ pub struct MintWusdv<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(nonce: u8)]
 pub struct BurnWusdv<'info> {
     #[account(mut)]
     pub user: Signer<'info>, // signer, but not checking token account owner
@@ -38,6 +38,14 @@ pub struct BurnWusdv<'info> {
     pub token_program: Program<'info, Token>,
 
     // ✅ Wormhole required accounts
+    // NonceAccount added (one per user, or shared globally)
+    #[account(
+        mut,
+        seeds = [b"nonce", user.key().as_ref()],
+        bump
+    )]
+    pub nonce_account: Account<'info, NonceAccount>,
+
     /// CHECK: verified via CPI
     pub wormhole_program: AccountInfo<'info>,
 
@@ -49,7 +57,7 @@ pub struct BurnWusdv<'info> {
         init,
         payer = wormhole_payer,
         space = 1000, // or VAA_MAX_SIZE, typically ~1000
-        seeds = [b"message", user.key().as_ref(), &[nonce]], // Optional nonce or similar seed
+        seeds = [b"message", user.key().as_ref(), &nonce_account.nonce.to_le_bytes()], // Optional nonce or similar seed
         bump
     )]
     pub wormhole_message: AccountInfo<'info>,
@@ -71,5 +79,22 @@ pub struct BurnWusdv<'info> {
 
     pub clock: Sysvar<'info, Clock>,
     pub rent: Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct InitializeNonceAccount<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    #[account(
+        init,
+        payer = user,
+        space = 8 + 8, // 8 discriminator + 8 u64
+        seeds = [b"nonce", user.key().as_ref()],
+        bump
+    )]
+    pub nonce_account: Account<'info, NonceAccount>,
+
     pub system_program: Program<'info, System>,
 }

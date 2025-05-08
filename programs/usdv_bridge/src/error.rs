@@ -7,4 +7,7 @@ pub enum CustomError {
 
     #[msg("Mint has invalid decimals.")]
     InvalidMintDecimals,
+
+    #[msg("wormhole message nonce overflow.")]
+    Overflow,
 }

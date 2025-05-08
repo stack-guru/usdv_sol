@@ -1,5 +1,6 @@
-use crate::context::{BurnWusdv, MintWusdv};
+use crate::context::{BurnWusdv, InitializeNonceAccount, MintWusdv};
 use crate::state::BurnPayload;
+use crate::error::CustomError;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{burn, mint_to, Burn, MintTo};
 use wormhole_anchor_sdk::wormhole::*;
@@ -24,7 +25,7 @@ pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {
     Ok(())
 }
 
-pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey, nonce: u8) -> Result<()> {
+pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey) -> Result<()> {
     let cpi_ctx = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         Burn {
@@ -42,12 +43,25 @@ pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey, nonce
     let mut recipient_address = [0u8; 32];
     recipient_address[12..].copy_from_slice(&recipient.to_bytes()[..20]);
 
-    let payload = BurnPayload { amount, recipient: recipient_address };
+    let payload = BurnPayload {
+        amount,
+        recipient: recipient_address,
+    };
 
     let payload_bytes = payload.try_to_vec()?; // serialize to Vec<u8>
     let payload_bytes_clone = payload_bytes.clone(); // clone for logging
 
-    // Wormhole post_message call
+    // Prepare signer seeds for wormhole message PDA
+    let nonce = ctx.accounts.nonce_account.nonce;
+    let user_key = ctx.accounts.user.key();
+    let message_seeds = &[
+        b"message",
+        user_key.as_ref(),
+        &nonce.to_le_bytes(), // nonce used as seed
+        &[ctx.bumps.wormhole_message],
+    ];
+
+    // Post message to Wormhole
     post_message(
         CpiContext::new_with_signer(
             ctx.accounts.wormhole_program.to_account_info(),
@@ -62,13 +76,25 @@ pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey, nonce
                 rent: ctx.accounts.rent.to_account_info(),
                 system_program: ctx.accounts.system_program.to_account_info(),
             },
-            &[&[b"emitter", &[ctx.bumps.wormhole_emitter]]], // example signer seed
+            &[message_seeds],
         ),
-        0,                   // batch_id
-        payload_bytes,             // serialized payload
-        Finality::Confirmed, // finality level
+        0, // batch ID
+        payload_bytes,
+        Finality::Confirmed,
     )?;
-    msg!("Sent message to Wormhole with payload: {:?}", payload_bytes_clone);
 
+    msg!(
+        "Sent message to Wormhole with payload: {:?}",
+        payload_bytes_clone
+    );
+
+    // ✅ Increment the nonce after successful message
+    ctx.accounts.nonce_account.nonce = nonce.checked_add(1).ok_or(CustomError::Overflow)?;
+
+    Ok(())
+}
+
+pub fn initialize_nonce_account(ctx: Context<InitializeNonceAccount>) -> Result<()> {
+    ctx.accounts.nonce_account.nonce = 0;
     Ok(())
 }

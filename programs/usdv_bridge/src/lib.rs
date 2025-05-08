@@ -12,11 +12,15 @@ declare_id!("G3Do6ZuHbZbEruQTwcwY5Vdu35JPnbLHpvaVEtviWwbR");
 pub mod usdv_bridge {
     use super::*;
 
+    pub fn initialize_nonce_account(ctx: Context<InitializeNonceAccount>) -> Result<()> {
+        processor::initialize_nonce_account(ctx)
+    }
+
     pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {
         processor::mint_wusdv(ctx, amount)
     }
 
-    pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey, nonce: u8) -> Result<()> {
-        processor::burn_wusdv(ctx, amount, recipient, nonce)
+    pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64, recipient: Pubkey) -> Result<()> {
+        processor::burn_wusdv(ctx, amount, recipient)
     }
 }

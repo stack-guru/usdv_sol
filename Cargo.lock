@@ -2434,6 +2434,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "wormhole-anchor-sdk",
+ "wormhole-io",
 ]
 
 [[package]]
@@ -2663,6 +2664,12 @@ dependencies = [
  "anchor-spl",
  "cfg-if",
 ]
+
+[[package]]
+name = "wormhole-io"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5694ee9f8f37b27fdcbc34e2a6cd009f8ad57df1e13f92b1ffd31bd9f239a6d6"
 
 [[package]]
 name = "zerocopy"

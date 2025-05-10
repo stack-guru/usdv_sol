@@ -129,7 +129,7 @@ describe("usdv_bridge", () => {
     const nonce = nonceAccountData.nonce;
 
     const [wormholeMessage, wormholeMessageBump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("message"), wallet.publicKey.toBuffer()],
+      [Buffer.from("message"), wallet.publicKey.toBuffer(), Buffer.from([nonce])],
       program.programId
     );
 
@@ -137,6 +137,7 @@ describe("usdv_bridge", () => {
       [Buffer.from("emitter")],
       program.programId
     );
+    console.log('wormholeEmitter = ', wormholeEmitter)
 
     const wormholeSequence = anchor.web3.Keypair.generate();
     const wormholeConfig = anchor.web3.Keypair.generate();
@@ -144,7 +145,7 @@ describe("usdv_bridge", () => {
 
     try {
       const tx = await program.methods
-        .burnWusdv(new anchor.BN(amount), wallet.publicKey) // ⛔ no nonce arg anymore
+        .burnWusdv(new anchor.BN(amount), wallet.publicKey)
         .accounts({
           user: wallet.publicKey,
           userTokenAccount,
@@ -159,7 +160,7 @@ describe("usdv_bridge", () => {
           wormholePayer: wallet.publicKey,
           wormholeFeeCollector: wormholeFeeCollector.publicKey,
 
-          nonceAccount, // ✅ NEW: pass the nonce account to the context
+          nonceAccount, 
           clock: SYSVAR_CLOCK_PUBKEY,
           rent: SYSVAR_RENT_PUBKEY,
           systemProgram: SystemProgram.programId,

@@ -27,4 +27,8 @@ pub enum CustomError {
     #[msg("InvalidWormholeSequence")]
     /// Specified emitter's sequence PDA is wrong.
     InvalidWormholeSequence,
+
+    #[msg("InvalidMessage")]
+    /// Deserialized message has unexpected payload type.
+    InvalidMessage
 }

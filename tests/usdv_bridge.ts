@@ -10,6 +10,9 @@ import {
 } from "@solana/spl-token";
 import { assert } from "chai";
 import { PublicKey, SYSVAR_RENT_PUBKEY, SYSVAR_CLOCK_PUBKEY, SystemProgram } from "@solana/web3.js"; // Import if you haven't
+import { getPostMessageCpiAccounts } from "@wormhole-foundation/sdk-solana-core/dist/cjs/utils";
+import { wormhole } from "@wormhole-foundation/sdk";
+import { utils } from '@wormhole-foundation/sdk-solana';
 
 const EXISTING_MINT = new PublicKey("CUeFA3eTUcKCctTWuieMXLvn9ChAaMi5z6QhLRzJL3qn");
 const WORMHOLE_PROGRAM_ID = new PublicKey("Bridge1p5gheXUvJ6jGWGeCsgPKgnE3YgdGKRVCMY9o");
@@ -41,15 +44,6 @@ describe("usdv_bridge", () => {
       program.programId
     );
 
-    // // Create mint with PDA as authority
-    // mint = await createMint(
-    //   provider.connection,
-    //   wallet.payer,
-    //   mintAuthorityPda, // PDA as mint authority
-    //   null,
-    //   6
-    // );
-
     mint = EXISTING_MINT;
 
     // Create user's associated token account for the mint
@@ -61,16 +55,7 @@ describe("usdv_bridge", () => {
     );
 
     userTokenAccount = userTokenAccountInfo.address;
-    // // Fund the user's token account with some tokens to burn
-    // const amount = 1_000_000; // 1 token with 6 decimals
-    // await mintTo(
-    //   provider.connection,
-    //   wallet.payer,
-    //   mint,
-    //   userTokenAccount,
-    //   mintAuthorityPda, // mint authority is used to mint tokens
-    //   amount
-    // );
+
   });
 
   it("should mint wUSDV to user", async () => {
@@ -99,71 +84,14 @@ describe("usdv_bridge", () => {
   it("should burn wUSDV from user", async () => {
     const amount = 500_000;
 
-    // Derive nonce account PDA
-    const [nonceAccount, _nonceBump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("nonce"), wallet.publicKey.toBuffer()],
-      program.programId
-    );
-
-    // Initialize nonce account (only once per test run / user)
-    try {
-      await program.methods
-        .initializeNonceAccount()
-        .accounts({
-          nonceAccount,
-          user: wallet.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
-      console.log("Nonce account initialized.");
-    } catch (e) {
-      if (e.message.includes("already in use")) {
-        console.log("Nonce account already initialized.");
-      } else {
-        throw e;
-      }
-    }
-
-    // Fetch nonce value from on-chain
-    const nonceAccountData = await program.account.nonceAccount.fetch(nonceAccount);
-    const nonce = nonceAccountData.nonce;
-
-    const [wormholeMessage, wormholeMessageBump] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("message"), wallet.publicKey.toBuffer(), Buffer.from([nonce])],
-      program.programId
-    );
-
-    const [wormholeEmitter] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("emitter")],
-      program.programId
-    );
-    console.log('wormholeEmitter = ', wormholeEmitter)
-
-    const wormholeSequence = anchor.web3.Keypair.generate();
-    const wormholeConfig = anchor.web3.Keypair.generate();
-    const wormholeFeeCollector = anchor.web3.Keypair.generate();
-
     try {
       const tx = await program.methods
-        .burnWusdv(new anchor.BN(amount), wallet.publicKey)
+        .burnWusdv(new anchor.BN(amount))
         .accounts({
           user: wallet.publicKey,
           userTokenAccount,
           tokenMint: mint,
           tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-
-          wormholeProgram: WORMHOLE_PROGRAM_ID,
-          wormholeConfig: wormholeConfig.publicKey,
-          wormholeMessage,
-          wormholeEmitter,
-          wormholeSequence: wormholeSequence.publicKey,
-          wormholePayer: wallet.publicKey,
-          wormholeFeeCollector: wormholeFeeCollector.publicKey,
-
-          nonceAccount, 
-          clock: SYSVAR_CLOCK_PUBKEY,
-          rent: SYSVAR_RENT_PUBKEY,
-          systemProgram: SystemProgram.programId,
         })
         .signers([])
         .rpc();
@@ -177,4 +105,5 @@ describe("usdv_bridge", () => {
       throw err;
     }
   });
+
 });

@@ -1,5 +1,5 @@
 import { utils } from '@wormhole-foundation/sdk-solana';
-import { deriveWormholeEmitterKey } from '@wormhole-foundation/sdk-solana-core/dist/cjs/utils';
+import { deriveWormholeEmitterKey } from '@certusone/wormhole-sdk/lib/cjs/solana/wormhole';
 import { PublicKeyInitData } from "@solana/web3.js";
 import { createProgramInterface } from "../program";
 

@@ -1,7 +1,8 @@
 import { Connection, PublicKey, PublicKeyInitData, TransactionInstruction } from "@solana/web3.js";
 import { createProgramInterface } from "../program";
 import { deriveConfigKey, deriveWormholeMessageKey } from "../accounts";
-import { getPostMessageCpiAccounts, getProgramSequenceTracker } from "@wormhole-foundation/sdk-solana-core/dist/cjs/utils";
+import { getPostMessageCpiAccounts } from "@certusone/wormhole-sdk/lib/cjs/solana";
+import { getProgramSequenceTracker } from "@certusone/wormhole-sdk/lib/cjs/solana/wormhole";
 
 export async function createSendMessageInstruction(
   connection: Connection,

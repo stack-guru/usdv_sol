@@ -9,17 +9,15 @@ import {
   mintTo,
 } from "@solana/spl-token";
 import { assert, expect } from "chai";
-import { PublicKey, Connection } from "@solana/web3.js";
-import { getPostMessageCpiAccounts, getProgramSequenceTracker } from "@certusone/wormhole-sdk/lib/cjs/solana/wormhole";
-import { getPostedMessage } from "@certusone/wormhole-sdk/lib/cjs/solana/wormhole";
-// import { wormhole, chainToChainId } from "@wormhole-foundation/sdk";
-import { utils } from '@wormhole-foundation/sdk-solana';
+import { PublicKey, Connection, clusterApiUrl, Ed25519Program } from "@solana/web3.js";
+import { utils as solanaUtils } from '@wormhole-foundation/sdk-solana';
+import { utils as solanaCoreUtils } from "@wormhole-foundation/sdk-solana-core";
 import { CORE_BRIDGE_PID } from "./helpers/constants";
+import { getPostedMessage } from "@certusone/wormhole-sdk/lib/cjs/solana/wormhole";
 import * as bridge from "../ts_sdk";
 
 const EXISTING_MINT = new PublicKey("CUeFA3eTUcKCctTWuieMXLvn9ChAaMi5z6QhLRzJL3qn");
-const WORMHOLE_PROGRAM_ID = new PublicKey("Bridge1p5gheXUvJ6jGWGeCsgPKgnE3YgdGKRVCMY9o");
-const connection = new Connection("https://api.devnet.solana.com", "processed");
+const connection = new Connection(clusterApiUrl("devnet"), "processed");
 
 describe("wormhole bridge", function () {
   // Set up Anchor provider
@@ -29,44 +27,44 @@ describe("wormhole bridge", function () {
   const program = anchor.workspace.UsdvBridge as Program<UsdvBridge>;
 
   // const realForeignEmitter = bridge.deriveForeignEmitterKey(WORMHOLE_PROGRAM_ID, chainToChainId("Ethereum"));
-  const realConfig = bridge.deriveConfigKey(WORMHOLE_PROGRAM_ID);
+  const realConfig = bridge.deriveConfigKey(program.programId);
 
-  const wormholeCpi = getPostMessageCpiAccounts(
-    WORMHOLE_PROGRAM_ID,
+  const wormholeCpi = solanaCoreUtils.getPostMessageCpiAccounts(
+    program.programId,
     CORE_BRIDGE_PID,
     wallet.publicKey,
-    utils.deriveAddress([Buffer.from("alive")], WORMHOLE_PROGRAM_ID)
+    bridge.deriveWormholeMessageKey(program.programId, 2n) // sequence should be increased for every test
   );
 
   describe("Bridge", function () {
-    before(async function () {
-      const realInitializeAccounts = {
-        owner: wallet.publicKey,
-        config: realConfig,
-        wormholeProgram: CORE_BRIDGE_PID,
-        wormholeBridge: wormholeCpi.wormholeBridge,
-        wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
-        wormholeEmitter: wormholeCpi.wormholeEmitter,
-        wormholeSequence: wormholeCpi.wormholeSequence,
-        wormholeMessage: wormholeCpi.wormholeMessage,
-        clock: wormholeCpi.clock,
-        rent: wormholeCpi.rent,
-      };
+    // before(async function () {
+    //   const realInitializeAccounts = {
+    //     owner: wallet.publicKey,
+    //     config: realConfig,
+    //     wormholeProgram: CORE_BRIDGE_PID,
+    //     wormholeBridge: wormholeCpi.wormholeBridge,
+    //     wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
+    //     wormholeEmitter: wormholeCpi.wormholeEmitter,
+    //     wormholeSequence: wormholeCpi.wormholeSequence,
+    //     wormholeMessage: wormholeCpi.wormholeMessage,
+    //     clock: wormholeCpi.clock,
+    //     rent: wormholeCpi.rent,
+    //   };
 
-      const trx = await program.methods
-        .initialize()
-        .accounts(realInitializeAccounts)
-        .rpc();
+    //   const trx = await program.methods
+    //     .initialize()
+    //     .accounts({ ...realInitializeAccounts, })
+    //     .rpc();
 
-      console.log('initalize trx = ', trx);
-    });
+    //   console.log('initialize trx = ', trx);
+    // });
 
     it("should send message", async () => {
       const helloMessage = Buffer.from("All your base are belong to us");
 
       // save message count to grab posted message later
       const sequence = (
-        await getProgramSequenceTracker(connection, WORMHOLE_PROGRAM_ID, CORE_BRIDGE_PID)
+        await solanaCoreUtils.getProgramSequenceTracker(connection, program.programId, CORE_BRIDGE_PID)
       ).value() + 1n;
       console.log('sequence = ', sequence);
 
@@ -86,10 +84,11 @@ describe("wormhole bridge", function () {
         })
         .rpc();
 
+      console.log('send message trx = ', trx);
       const { payload } =
         (await getPostedMessage(
           connection,
-          bridge.deriveWormholeMessageKey(WORMHOLE_PROGRAM_ID, sequence)
+          bridge.deriveWormholeMessageKey(program.programId, sequence)
         )).message;
 
       expect(payload.readUint8(0)).equals(1); // payload ID

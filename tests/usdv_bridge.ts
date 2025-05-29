@@ -11,10 +11,12 @@ import {
 import { assert, expect } from "chai";
 import { PublicKey, Connection, clusterApiUrl, Ed25519Program } from "@solana/web3.js";
 import { utils as solanaUtils } from '@wormhole-foundation/sdk-solana';
-import { chainToChainId } from "@wormhole-foundation/sdk";
+import { ChainId, chainToChainId } from "@wormhole-foundation/sdk";
 import { utils as solanaCoreUtils } from "@wormhole-foundation/sdk-solana-core";
+import { parseVaa, postVaaSolana } from "@certusone/wormhole-sdk";
 import { CORE_BRIDGE_PID } from "./helpers/constants";
 import { getPostedMessage } from "@certusone/wormhole-sdk/lib/cjs/solana/wormhole";
+import { NodeWallet } from "@certusone/wormhole-sdk/lib/cjs/solana";
 import * as bridge from "../ts_sdk";
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -29,7 +31,6 @@ describe("wormhole bridge", function () {
   const wallet = provider.wallet as anchor.Wallet;
   anchor.setProvider(provider);
   const program = anchor.workspace.UsdvBridge as Program<UsdvBridge>;
-
   const realForeignEmitter = bridge.deriveForeignEmitterKey(program.programId, chainToChainId("PolygonSepolia"));
   // const realForeignEmitterAddress = Buffer.alloc(32, amoyAddress, "hex");
   const realForeignEmitterAddress = Buffer.from(
@@ -42,7 +43,7 @@ describe("wormhole bridge", function () {
     program.programId,
     CORE_BRIDGE_PID,
     wallet.publicKey,
-    bridge.deriveWormholeMessageKey(program.programId, 20n) // sequence should be increased for every test
+    bridge.deriveWormholeMessageKey(program.programId, 25n) // sequence should be increased for every test
   );
 
   describe("Bridge", function () {
@@ -133,7 +134,53 @@ describe("wormhole bridge", function () {
     });
 
     it("should receive message", async () => {
+      // const buffer = Buffer.from("AQAAAAABAF3ehEopD6n8ej1hwh2D4kvifKPbWoVm+lYP7sgN64muVfDVdoNSreoWsKiVFGOW5+9im2VPTl5dfOECTnQ4qFsAaDeWOQAAAAAnFwAAAAAAAAAAAAAAAB7FWP1ULTVLeBioqPgSS2458BW5AAAAAAAAAAQBAQAGc3RyZXNz", 'base64');
+      // const parsed = parseVaa(buffer);
 
+      // console.log('parsed = ', parsed);
+
+      // const nodeWallet = NodeWallet.fromSecretKey(wallet.payer.secretKey);
+      // console.log('node wallet = ', nodeWallet);
+
+      // const posted = await postVaaSolana(
+      //   connection,
+      //   nodeWallet.signTransaction,
+      //   CORE_BRIDGE_PID,
+      //   nodeWallet.key(),
+      //   buffer
+      // );
+
+      // console.log('posted = ', posted);
+
+      // return program.methods
+      //   .receiveMessage([...parsed.hash])
+      //   .accounts({
+      //     payer: wallet.publicKey,
+      //     config: bridge.deriveConfigKey(program.programId),
+      //     wormholeProgram: new PublicKey(CORE_BRIDGE_PID),
+      //     posted: solanaCoreUtils.derivePostedVaaKey(CORE_BRIDGE_PID, parsed.hash),
+      //     foreignEmitter: bridge.deriveForeignEmitterKey(program.programId, parsed.emitterChain as ChainId),
+      //     received: bridge.deriveReceivedKey(
+      //       program.programId,
+      //       parsed.emitterChain as ChainId,
+      //       parsed.sequence
+      //     ),
+      //   })
+      //   .rpc();
+    })
+
+    it("should get received message", async () => {
+      const buffer = Buffer.from("AQAAAAABAF3ehEopD6n8ej1hwh2D4kvifKPbWoVm+lYP7sgN64muVfDVdoNSreoWsKiVFGOW5+9im2VPTl5dfOECTnQ4qFsAaDeWOQAAAAAnFwAAAAAAAAAAAAAAAB7FWP1ULTVLeBioqPgSS2458BW5AAAAAAAAAAQBAQAGc3RyZXNz", 'base64');
+      const parsed = parseVaa(buffer);
+      const received = await bridge.getReceivedData(
+        program.programId,
+        parsed.emitterChain as ChainId, // don't do this at home, kids
+        parsed.sequence
+      );
+
+      console.log('batch id & message = ', received.batchId, received.message.toString());
+      // expect(received.batchId).equals(batchId);
+      // expect(received.message).deep.equals(message);
     })
 
   });

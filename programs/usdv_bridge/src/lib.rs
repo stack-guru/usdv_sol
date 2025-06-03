@@ -7,7 +7,7 @@ pub mod message;
 pub mod processor;
 pub mod state;
 
-declare_id!("G3Do6ZuHbZbEruQTwcwY5Vdu35JPnbLHpvaVEtviWwbR");
+declare_id!("576UthHQryst2R9hrT9J44RfJG1tzDPSrXtMgQ3DqEQe");
 
 #[program]
 pub mod usdv_bridge {

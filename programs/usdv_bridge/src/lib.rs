@@ -65,4 +65,8 @@ pub mod usdv_bridge {
     pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
         processor::burn_wusdv(ctx, amount)
     }
+
+    pub fn set_public_mint(ctx: Context<SetPublicMint>, is_mintable: bool) -> Result<()> {
+        processor::set_public_mint(ctx, is_mintable)
+    }
 }

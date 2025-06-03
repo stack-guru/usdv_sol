@@ -210,10 +210,10 @@ pub fn receive_and_mint(ctx: Context<ReceiveAndMint>, vaa_hash: [u8; 32]) -> Res
     }
 }
 
-pub fn set_public_mint(ctx: Context<SetPublicMint>, value: bool) -> Result<()> {
+pub fn set_public_mint(ctx: Context<SetPublicMint>, is_mintable: bool) -> Result<()> {
     let config = &mut ctx.accounts.config;
-    config.is_public_mint = value;
-    msg!("Set is_public_mint to {}", value);
+    config.is_public_mint = is_mintable;
+    msg!("Set is_public_mint to {}", is_mintable);
     Ok(())
 }
 

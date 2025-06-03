@@ -48,12 +48,18 @@ pub mod usdv_bridge {
         processor::send_message(ctx, message)
     }
 
+    /*
     pub fn receive_message(ctx: Context<ReceiveMessage>, vaa_hash: [u8; 32]) -> Result<()> {
         processor::receive_message(ctx, vaa_hash)
     }
 
     pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {
         processor::mint_wusdv(ctx, amount)
+    }
+     */
+
+    pub fn receive_and_mint(ctx: Context<ReceiveAndMint>, vaa_hash: [u8; 32]) -> Result<()> {
+        processor::receive_and_mint(ctx, vaa_hash)
     }
 
     pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {

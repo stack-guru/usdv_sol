@@ -43,7 +43,7 @@ describe("wormhole bridge", function () {
     program.programId,
     CORE_BRIDGE_PID,
     wallet.publicKey,
-    bridge.deriveWormholeMessageKey(program.programId, 32n) // sequence should be increased for every test
+    bridge.deriveWormholeMessageKey(program.programId, 33n) // sequence should be increased for every test
   )
 
   describe("Bridge", function () {

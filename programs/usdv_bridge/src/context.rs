@@ -7,7 +7,7 @@ pub const SEED_PREFIX_SENT: &[u8; 4] = b"sent";
 use crate::{
     error::CustomError,
     message::WormholeMessage,
-    state::{Config, ForeignEmitter, WormholeEmitter, Received},
+    state::{Config, ForeignEmitter, Received, WormholeEmitter},
 };
 
 #[derive(Accounts)]
@@ -104,27 +104,6 @@ pub struct Initialize<'info> {
 
     /// System program.
     pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-pub struct MintWusdv<'info> {
-    #[account(mut)]
-    pub user: Signer<'info>,
-
-    #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>,
-
-    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
-    pub token_mint: Account<'info, Mint>,
-
-    #[account(
-        seeds = [b"mint_authority"], // use your actual seeds here
-        bump
-    )]
-    /// CHECK: This will be verified in the handler
-    pub mint_authority: AccountInfo<'info>,
-
-    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -251,6 +230,98 @@ type WormholeVaa = wormhole::PostedVaa<WormholeMessage>;
 
 #[derive(Accounts)]
 #[instruction(vaa_hash: [u8; 32])]
+pub struct ReceiveAndMint<'info> {
+    /// User who receives the minted tokens
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    /// Pays for account initialization
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        seeds = [Config::SEED_PREFIX],
+        bump,
+    )]
+    pub config: Account<'info, Config>,
+
+    pub wormhole_program: Program<'info, Wormhole>,
+
+    #[account(
+        seeds = [
+            wormhole::SEED_PREFIX_POSTED_VAA,
+            &vaa_hash
+        ],
+        bump,
+        seeds::program = wormhole_program.key
+    )]
+    pub posted: Account<'info, WormholeVaa>,
+
+    #[account(
+        seeds = [
+            ForeignEmitter::SEED_PREFIX,
+            &posted.emitter_chain().to_le_bytes()[..]
+        ],
+        bump,
+        constraint = foreign_emitter.verify(posted.emitter_address()) @ CustomError::InvalidForeignEmitter
+    )]
+    pub foreign_emitter: Account<'info, ForeignEmitter>,
+
+    #[account(
+        init,
+        payer = payer,
+        seeds = [
+            Received::SEED_PREFIX,
+            &posted.emitter_chain().to_le_bytes()[..],
+            &posted.sequence().to_le_bytes()[..]
+        ],
+        bump,
+        space = Received::MAXIMUM_SIZE
+    )]
+    pub received: Account<'info, Received>,
+
+    // MINT-related accounts
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
+    pub token_mint: Account<'info, Mint>,
+
+    #[account(
+        seeds = [b"mint_authority"],
+        bump
+    )]
+    /// CHECK: Verified in CPI context
+    pub mint_authority: AccountInfo<'info>,
+
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+/*
+#[derive(Accounts)]
+pub struct MintWusdv<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
+    pub token_mint: Account<'info, Mint>,
+
+    #[account(
+        seeds = [b"mint_authority"], // use your actual seeds here
+        bump
+    )]
+    /// CHECK: This will be verified in the handler
+    pub mint_authority: AccountInfo<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(vaa_hash: [u8; 32])]
 pub struct ReceiveMessage<'info> {
     #[account(mut)]
     /// Payer will initialize an account that tracks his own message IDs.
@@ -312,3 +383,4 @@ pub struct ReceiveMessage<'info> {
     /// System program.
     pub system_program: Program<'info, System>,
 }
+ */

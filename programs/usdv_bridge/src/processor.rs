@@ -1,5 +1,8 @@
+use crate::state::received::MESSAGE_MAX_LENGTH;
 use crate::{
-    context::{BurnWusdv, Initialize, MintWusdv, RegisterEmitter, SendMessage, ReceiveMessage, SEED_PREFIX_SENT},
+    context::{
+        BurnWusdv, Initialize, ReceiveAndMint, RegisterEmitter, SendMessage, SEED_PREFIX_SENT,
+    },
     error::CustomError,
     message::WormholeMessage,
 };
@@ -7,7 +10,6 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 use anchor_spl::token::{burn, mint_to, Burn, MintTo};
 use wormhole_anchor_sdk::wormhole;
-use crate::state::received::MESSAGE_MAX_LENGTH;
 
 pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
     let config = &mut ctx.accounts.config;
@@ -158,6 +160,52 @@ pub fn register_emitter(
     Ok(())
 }
 
+fn vec_u8_to_u64(vec: Vec<u8>) -> Result<u64> {
+    let s = std::str::from_utf8(&vec).map_err(|_| error!(CustomError::InvalidMessage))?;
+    s.parse::<u64>()
+        .map_err(|_| error!(CustomError::InvalidMessage))
+}
+
+pub fn receive_and_mint(ctx: Context<ReceiveAndMint>, vaa_hash: [u8; 32]) -> Result<()> {
+    let posted_message = &ctx.accounts.posted;
+
+    if let WormholeMessage::Hello { message } = posted_message.data() {
+        // 1. Validate message length
+        require!(
+            message.len() <= MESSAGE_MAX_LENGTH,
+            CustomError::InvalidMessage,
+        );
+
+        let amount = vec_u8_to_u64(message.clone())?;
+
+        // 3. Record the message to prevent replay
+        let received = &mut ctx.accounts.received;
+        received.batch_id = posted_message.batch_id();
+        received.wormhole_message_hash = vaa_hash;
+        received.message = message.clone();
+
+        // 4. Mint the tokens using PDA
+        let seeds: &[&[u8]] = &[b"mint_authority", &[ctx.bumps.mint_authority]];
+
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo {
+                mint: ctx.accounts.token_mint.to_account_info(),
+                to: ctx.accounts.user_token_account.to_account_info(),
+                authority: ctx.accounts.mint_authority.clone(),
+            },
+        );
+
+        mint_to(cpi_ctx.with_signer(&[seeds]), amount)?;
+
+        msg!("Successfully received and minted {} wUSDV", amount);
+        Ok(())
+    } else {
+        Err(CustomError::InvalidMessage.into())
+    }
+}
+
+/*
 pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {
     // Ensure the mint authority is the bridge program
     // let mint_authority = &ctx.accounts.mint_authority;
@@ -177,6 +225,7 @@ pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {
     msg!("Successfully minted {} wUSDV", amount);
     Ok(())
 }
+ */
 
 pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
     let cpi_ctx = CpiContext::new(
@@ -269,6 +318,7 @@ pub fn send_message(ctx: Context<SendMessage>, message: Vec<u8>) -> Result<()> {
     Ok(())
 }
 
+/*
 pub fn receive_message(ctx: Context<ReceiveMessage>, vaa_hash: [u8; 32]) -> Result<()> {
     let posted_message = &ctx.accounts.posted;
 
@@ -291,3 +341,4 @@ pub fn receive_message(ctx: Context<ReceiveMessage>, vaa_hash: [u8; 32]) -> Resu
         Err(CustomError::InvalidMessage.into())
     }
 }
+ */

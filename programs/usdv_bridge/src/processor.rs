@@ -1,7 +1,8 @@
 use crate::state::received::MESSAGE_MAX_LENGTH;
 use crate::{
     context::{
-        BurnWusdv, Initialize, ReceiveAndMint, RegisterEmitter, SendMessage, SetPublicMint, SEED_PREFIX_SENT,
+        BurnWusdv, Initialize, ReceiveAndMint, RegisterEmitter, SendMessage, SetPublicMint,
+        SEED_PREFIX_SENT,
     },
     error::CustomError,
     message::WormholeMessage,
@@ -189,6 +190,7 @@ pub fn receive_and_mint(ctx: Context<ReceiveAndMint>, vaa_hash: [u8; 32]) -> Res
         received.wormhole_message_hash = vaa_hash;
         received.message = message.clone();
 
+        msg!("minting... {} wUSDV", amout);
         // 4. Mint the tokens using PDA
         let seeds: &[&[u8]] = &[b"mint_authority", &[ctx.bumps.mint_authority]];
 

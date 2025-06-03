@@ -43,7 +43,7 @@ describe("wormhole bridge", function () {
     program.programId,
     CORE_BRIDGE_PID,
     wallet.publicKey,
-    bridge.deriveWormholeMessageKey(program.programId, 33n) // sequence should be increased for every test
+    bridge.deriveWormholeMessageKey(program.programId, 1n) // sequence should be increased for every test
   )
 
   // mint accounts
@@ -208,6 +208,22 @@ describe("wormhole bridge", function () {
       // // expect(received.message).deep.equals(message);
     })
 
+    it("should enable public mint", async () => {
+      // const isMintable = true
+      // const accounts = {
+      //   owner: wallet.publicKey,
+      //   config: realConfig
+      // }
+
+      // const trx = await program.methods
+      //   .setPublicMint(isMintable)
+      //   .accounts({ ...accounts })
+      //   .rpc();
+
+      // const configAccount = await program.account.config.fetch(realConfig);
+      // expect(isMintable).equal(configAccount.isPublicMint);
+    })
+
     it("should receive message and mint token", async () => {
       const buffer = Buffer.from("AQAAAAABAF3ehEopD6n8ej1hwh2D4kvifKPbWoVm+lYP7sgN64muVfDVdoNSreoWsKiVFGOW5+9im2VPTl5dfOECTnQ4qFsAaDeWOQAAAAAnFwAAAAAAAAAAAAAAAB7FWP1ULTVLeBioqPgSS2458BW5AAAAAAAAAAQBAQAGc3RyZXNz", 'base64');
       const parsed = parseVaa(buffer);
@@ -215,7 +231,6 @@ describe("wormhole bridge", function () {
       console.log('parsed = ', parsed);
 
       const nodeWallet = NodeWallet.fromSecretKey(wallet.payer.secretKey);
-      console.log('node wallet = ', nodeWallet);
 
       const posted = await postVaaSolana(
         connection,
@@ -225,13 +240,13 @@ describe("wormhole bridge", function () {
         buffer
       );
 
-      console.log('posted = ', posted);
+      console.log('posted!');
 
-      return program.methods
+      const trx = await program.methods
         .receiveAndMint([...parsed.hash])
         .accounts({
           payer: wallet.publicKey,
-          config: bridge.deriveConfigKey(program.programId),
+          config: realConfig,
           wormholeProgram: new PublicKey(CORE_BRIDGE_PID),
           posted: solanaCoreUtils.derivePostedVaaKey(CORE_BRIDGE_PID, parsed.hash),
           foreignEmitter: bridge.deriveForeignEmitterKey(program.programId, parsed.emitterChain as ChainId),
@@ -247,6 +262,8 @@ describe("wormhole bridge", function () {
           tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         })
         .rpc();
+
+      console.log('receive and mint trx = ', trx);
     })
   });
 

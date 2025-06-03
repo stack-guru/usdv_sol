@@ -30,5 +30,8 @@ pub enum CustomError {
 
     #[msg("InvalidMessage")]
     /// Deserialized message has unexpected payload type.
-    InvalidMessage
+    InvalidMessage,
+
+    #[msg("Public mint is disabled.")]
+    PublicMintDisabled,
 }

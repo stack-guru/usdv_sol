@@ -33,6 +33,7 @@ pub struct Config {
     /// AKA consistency level. u8 representation of Solana's
     /// [Finality](wormhole_anchor_sdk::wormhole::Finality).
     pub finality: u8,
+    pub is_public_mint: bool,
 }
 
 impl Config {
@@ -41,7 +42,7 @@ impl Config {
         + WormholeAddresses::LEN
         + 4 // batch_id
         + 1 // finality
-        
+        + 1 // bool
     ;
     /// AKA `b"config"`.
     pub const SEED_PREFIX: &'static [u8; 6] = b"config";
@@ -54,14 +55,17 @@ mod test {
 
     #[test]
     fn test_config() -> Result<()> {
-        assert_eq!(WormholeAddresses::LEN, std::mem::size_of::<WormholeAddresses>());
         assert_eq!(
-            Config::MAXIMUM_SIZE, 
+            WormholeAddresses::LEN,
+            std::mem::size_of::<WormholeAddresses>()
+        );
+        assert_eq!(
+            Config::MAXIMUM_SIZE,
             size_of::<u64>()
-            + size_of::<Pubkey>() 
-            + size_of::<WormholeAddresses>()
-            + size_of::<u32>()
-            + size_of::<u8>()
+                + size_of::<Pubkey>()
+                + size_of::<WormholeAddresses>()
+                + size_of::<u32>()
+                + size_of::<u8>()
         );
 
         Ok(())

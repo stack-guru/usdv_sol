@@ -1,7 +1,7 @@
 use crate::state::received::MESSAGE_MAX_LENGTH;
 use crate::{
     context::{
-        BurnWusdv, Initialize, ReceiveAndMint, RegisterEmitter, SendMessage, SEED_PREFIX_SENT,
+        BurnWusdv, Initialize, ReceiveAndMint, RegisterEmitter, SendMessage, SetPublicMint, SEED_PREFIX_SENT,
     },
     error::CustomError,
     message::WormholeMessage,
@@ -16,6 +16,7 @@ pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
 
     // Set the owner of the config (effectively the owner of the program).
     config.owner = ctx.accounts.owner.key();
+    config.is_public_mint = false;
 
     // Set Wormhole related addresses.
     {
@@ -168,6 +169,10 @@ fn vec_u8_to_u64(vec: Vec<u8>) -> Result<u64> {
 
 pub fn receive_and_mint(ctx: Context<ReceiveAndMint>, vaa_hash: [u8; 32]) -> Result<()> {
     let posted_message = &ctx.accounts.posted;
+    require!(
+        ctx.accounts.config.is_public_mint,
+        CustomError::PublicMintDisabled
+    );
 
     if let WormholeMessage::Hello { message } = posted_message.data() {
         // 1. Validate message length
@@ -203,6 +208,13 @@ pub fn receive_and_mint(ctx: Context<ReceiveAndMint>, vaa_hash: [u8; 32]) -> Res
     } else {
         Err(CustomError::InvalidMessage.into())
     }
+}
+
+pub fn set_public_mint(ctx: Context<SetPublicMint>, value: bool) -> Result<()> {
+    let config = &mut ctx.accounts.config;
+    config.is_public_mint = value;
+    msg!("Set is_public_mint to {}", value);
+    Ok(())
 }
 
 /*

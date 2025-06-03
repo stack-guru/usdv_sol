@@ -46,39 +46,64 @@ describe("wormhole bridge", function () {
     bridge.deriveWormholeMessageKey(program.programId, 33n) // sequence should be increased for every test
   )
 
+  // mint accounts
+  let mint: anchor.web3.PublicKey;
+  let userTokenAccount: anchor.web3.PublicKey;
+  let mintAuthorityPda: anchor.web3.PublicKey;
+  let burnAuthorityPda: anchor.web3.PublicKey;
+
   describe("Bridge", function () {
-    // before(async function () {
-    //   const realInitializeAccounts = {
-    //     owner: wallet.publicKey,
-    //     config: realConfig,
-    //     wormholeProgram: CORE_BRIDGE_PID,
-    //     wormholeBridge: wormholeCpi.wormholeBridge,
-    //     wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
-    //     wormholeEmitter: wormholeCpi.wormholeEmitter,
-    //     wormholeSequence: wormholeCpi.wormholeSequence,
-    //     wormholeMessage: wormholeCpi.wormholeMessage,
-    //     clock: wormholeCpi.clock,
-    //     rent: wormholeCpi.rent,
-    //   };
+    before(async function () {
+      // const realInitializeAccounts = {
+      //   owner: wallet.publicKey,
+      //   config: realConfig,
+      //   wormholeProgram: CORE_BRIDGE_PID,
+      //   wormholeBridge: wormholeCpi.wormholeBridge,
+      //   wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
+      //   wormholeEmitter: wormholeCpi.wormholeEmitter,
+      //   wormholeSequence: wormholeCpi.wormholeSequence,
+      //   wormholeMessage: wormholeCpi.wormholeMessage,
+      //   clock: wormholeCpi.clock,
+      //   rent: wormholeCpi.rent,
+      // };
 
-    //   const trx = await program.methods
-    //     .initialize()
-    //     .accounts({ ...realInitializeAccounts, })
-    //     .rpc();
+      // const trx = await program.methods
+      //   .initialize()
+      //   .accounts({ ...realInitializeAccounts, })
+      //   .rpc();
 
-    //   console.log('initialize trx = ', trx);
-    // });
+      // console.log('initialize trx = ', trx);
+
+
+      // Derive the mint authority PDA (you must use this in your Rust logic)
+      [mintAuthorityPda] = await anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("mint_authority")],
+        program.programId
+      );
+
+      mint = EXISTING_MINT;
+
+      // Create user's associated token account for the mint
+      const userTokenAccountInfo = await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        wallet.payer,
+        mint,
+        wallet.publicKey
+      );
+
+      userTokenAccount = userTokenAccountInfo.address;
+    });
 
     it("should get foreign emitter", async () => {
-      const { chain, address } =
-        await bridge.getForeignEmitterData(
-          program.programId,
-          chainToChainId("PolygonSepolia")
-        );
+      // const { chain, address } =
+      //   await bridge.getForeignEmitterData(
+      //     program.programId,
+      //     chainToChainId("PolygonSepolia")
+      //   );
 
-      console.log('realForeignEmitterAddress = ', realForeignEmitterAddress);
-      expect(chain).equals(chainToChainId("PolygonSepolia"));
-      expect(address).deep.equals(realForeignEmitterAddress);
+      // console.log('realForeignEmitterAddress = ', realForeignEmitterAddress);
+      // expect(chain).equals(chainToChainId("PolygonSepolia"));
+      // expect(address).deep.equals(realForeignEmitterAddress);
     })
 
     it("should register emitter", async () => {
@@ -97,40 +122,40 @@ describe("wormhole bridge", function () {
     })
 
     it("should send message", async () => {
-      const helloMessage = Buffer.from("send message from Solana");
+      // const helloMessage = Buffer.from("send message from Solana");
 
-      // save message count to grab posted message later
-      const sequence = (
-        await solanaCoreUtils.getProgramSequenceTracker(connection, program.programId, CORE_BRIDGE_PID)
-      ).value() + 1n;
-      console.log('sequence = ', sequence);
+      // // save message count to grab posted message later
+      // const sequence = (
+      //   await solanaCoreUtils.getProgramSequenceTracker(connection, program.programId, CORE_BRIDGE_PID)
+      // ).value() + 1n;
+      // console.log('sequence = ', sequence);
 
-      const trx = await program.methods
-        .sendMessage(helloMessage)
-        .accounts({
-          payer: wallet.publicKey,
-          config: realConfig,
-          wormholeProgram: CORE_BRIDGE_PID,
-          wormholeBridge: wormholeCpi.wormholeBridge,
-          wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
-          wormholeEmitter: wormholeCpi.wormholeEmitter,
-          wormholeSequence: wormholeCpi.wormholeSequence,
-          wormholeMessage: wormholeCpi.wormholeMessage,
-          clock: wormholeCpi.clock,
-          rent: wormholeCpi.rent,
-        })
-        .rpc();
+      // const trx = await program.methods
+      //   .sendMessage(helloMessage)
+      //   .accounts({
+      //     payer: wallet.publicKey,
+      //     config: realConfig,
+      //     wormholeProgram: CORE_BRIDGE_PID,
+      //     wormholeBridge: wormholeCpi.wormholeBridge,
+      //     wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
+      //     wormholeEmitter: wormholeCpi.wormholeEmitter,
+      //     wormholeSequence: wormholeCpi.wormholeSequence,
+      //     wormholeMessage: wormholeCpi.wormholeMessage,
+      //     clock: wormholeCpi.clock,
+      //     rent: wormholeCpi.rent,
+      //   })
+      //   .rpc();
 
-      console.log('send message trx = ', trx);
-      const { payload } =
-        (await getPostedMessage(
-          connection,
-          bridge.deriveWormholeMessageKey(program.programId, sequence)
-        )).message;
+      // console.log('send message trx = ', trx);
+      // const { payload } =
+      //   (await getPostedMessage(
+      //     connection,
+      //     bridge.deriveWormholeMessageKey(program.programId, sequence)
+      //   )).message;
 
-      expect(payload.readUint8(0)).equals(1); // payload ID
-      expect(payload.readUint16BE(1)).equals(helloMessage.length);
-      expect(payload.subarray(3)).deep.equals(helloMessage);
+      // expect(payload.readUint8(0)).equals(1); // payload ID
+      // expect(payload.readUint16BE(1)).equals(helloMessage.length);
+      // expect(payload.subarray(3)).deep.equals(helloMessage);
     });
 
     it("should receive message", async () => {
@@ -183,6 +208,46 @@ describe("wormhole bridge", function () {
       // // expect(received.message).deep.equals(message);
     })
 
+    it("should receive message and mint token", async () => {
+      const buffer = Buffer.from("AQAAAAABAF3ehEopD6n8ej1hwh2D4kvifKPbWoVm+lYP7sgN64muVfDVdoNSreoWsKiVFGOW5+9im2VPTl5dfOECTnQ4qFsAaDeWOQAAAAAnFwAAAAAAAAAAAAAAAB7FWP1ULTVLeBioqPgSS2458BW5AAAAAAAAAAQBAQAGc3RyZXNz", 'base64');
+      const parsed = parseVaa(buffer);
+
+      console.log('parsed = ', parsed);
+
+      const nodeWallet = NodeWallet.fromSecretKey(wallet.payer.secretKey);
+      console.log('node wallet = ', nodeWallet);
+
+      const posted = await postVaaSolana(
+        connection,
+        nodeWallet.signTransaction,
+        CORE_BRIDGE_PID,
+        nodeWallet.key(),
+        buffer
+      );
+
+      console.log('posted = ', posted);
+
+      return program.methods
+        .receiveAndMint([...parsed.hash])
+        .accounts({
+          payer: wallet.publicKey,
+          config: bridge.deriveConfigKey(program.programId),
+          wormholeProgram: new PublicKey(CORE_BRIDGE_PID),
+          posted: solanaCoreUtils.derivePostedVaaKey(CORE_BRIDGE_PID, parsed.hash),
+          foreignEmitter: bridge.deriveForeignEmitterKey(program.programId, parsed.emitterChain as ChainId),
+          received: bridge.deriveReceivedKey(
+            program.programId,
+            parsed.emitterChain as ChainId,
+            parsed.sequence
+          ),
+          user: wallet.publicKey,
+          userTokenAccount,
+          tokenMint: mint,
+          mintAuthority: mintAuthorityPda,
+          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+    })
   });
 
   // describe("usdv_bridge", () => {

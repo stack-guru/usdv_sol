@@ -298,6 +298,14 @@ pub struct ReceiveAndMint<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct SetPublicMint<'info> {
+    #[account(mut, seeds = [Config::SEED_PREFIX], bump, has_one = owner)]
+    pub config: Account<'info, Config>,
+
+    pub owner: Signer<'info>,
+}
+
 /*
 #[derive(Accounts)]
 pub struct MintWusdv<'info> {

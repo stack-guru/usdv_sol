@@ -7,6 +7,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   getAccount,
   mintTo,
+  getMint
 } from "@solana/spl-token";
 import { assert, expect } from "chai";
 import { PublicKey, Connection, clusterApiUrl, Ed25519Program } from "@solana/web3.js";
@@ -22,7 +23,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const amoyAddress = process.env.AMOY_ADDRESS!;
-const EXISTING_MINT = new PublicKey("CUeFA3eTUcKCctTWuieMXLvn9ChAaMi5z6QhLRzJL3qn");
+const EXISTING_MINT = new PublicKey("Dkz4WrqjhmgqQjHaZb5q26hh79JkgMApS2i8qaxi5PKt");
 const connection = new Connection(clusterApiUrl("devnet"), "processed");
 
 describe("wormhole bridge", function () {
@@ -80,6 +81,7 @@ describe("wormhole bridge", function () {
         [Buffer.from("mint_authority")],
         program.programId
       );
+      console.log('mintAuthorityPda = ', mintAuthorityPda);
 
       mint = EXISTING_MINT;
 
@@ -92,6 +94,7 @@ describe("wormhole bridge", function () {
       );
 
       userTokenAccount = userTokenAccountInfo.address;
+      console.log('userTokenAccount = ', userTokenAccount)
     });
 
     it("should get foreign emitter", async () => {
@@ -225,7 +228,7 @@ describe("wormhole bridge", function () {
     })
 
     it("should receive message and mint token", async () => {
-      const buffer = Buffer.from("AQAAAAABAF3ehEopD6n8ej1hwh2D4kvifKPbWoVm+lYP7sgN64muVfDVdoNSreoWsKiVFGOW5+9im2VPTl5dfOECTnQ4qFsAaDeWOQAAAAAnFwAAAAAAAAAAAAAAAB7FWP1ULTVLeBioqPgSS2458BW5AAAAAAAAAAQBAQAGc3RyZXNz", 'base64');
+      const buffer = Buffer.from("AQAAAAABAKOEa4F2+xP8knW1BuQPhbELC7madqeHcl8JKjFEnWl4UBJQTVMvnLCKVvUNcMUwVDGAvSXmfCX4pDLOh2ttBdYBaD8IeAAAAAAnFwAAAAAAAAAAAAAAAB7FWP1ULTVLeBioqPgSS2458BW5AAAAAAAAAAUBAQADMTAw", 'base64');
       const parsed = parseVaa(buffer);
 
       console.log('parsed = ', parsed);

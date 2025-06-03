@@ -107,20 +107,6 @@ pub struct Initialize<'info> {
 }
 
 #[derive(Accounts)]
-pub struct BurnWusdv<'info> {
-    #[account(mut)]
-    pub user: Signer<'info>, // signer, but not checking token account owner
-
-    #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>, // token account to burn from
-
-    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
-    pub token_mint: Account<'info, Mint>, // the token mint
-
-    pub token_program: Program<'info, Token>,
-}
-
-#[derive(Accounts)]
 #[instruction(chain: u16)]
 pub struct RegisterEmitter<'info> {
     #[account(mut)]
@@ -157,73 +143,11 @@ pub struct RegisterEmitter<'info> {
 }
 
 #[derive(Accounts)]
-pub struct SendMessage<'info> {
-    #[account(mut)]
-    /// Payer will pay Wormhole fee to post a message.
-    pub payer: Signer<'info>,
-
-    #[account(
-        seeds = [Config::SEED_PREFIX],
-        bump,
-    )]
-    /// Config account. Wormhole PDAs specified in the config are checked
-    /// against the Wormhole accounts in this context. Read-only.
+pub struct SetPublicMint<'info> {
+    #[account(mut, seeds = [Config::SEED_PREFIX], bump, has_one = owner)]
     pub config: Account<'info, Config>,
 
-    /// Wormhole program.
-    pub wormhole_program: Program<'info, Wormhole>,
-
-    #[account(
-        mut,
-        address = config.wormhole.bridge @ CustomError::InvalidWormholeConfig
-    )]
-    /// Wormhole bridge data. [`wormhole::post_message`] requires this account
-    /// be mutable.
-    pub wormhole_bridge: Account<'info, wormhole::BridgeData>,
-
-    #[account(
-        mut,
-        address = config.wormhole.fee_collector @ CustomError::InvalidWormholeFeeCollector
-    )]
-    /// Wormhole fee collector. [`wormhole::post_message`] requires this
-    /// account be mutable.
-    pub wormhole_fee_collector: Account<'info, wormhole::FeeCollector>,
-
-    #[account(
-        seeds = [WormholeEmitter::SEED_PREFIX],
-        bump,
-    )]
-    /// Program's emitter account. Read-only.
-    pub wormhole_emitter: Account<'info, WormholeEmitter>,
-
-    #[account(
-        mut,
-        address = config.wormhole.sequence @ CustomError::InvalidWormholeSequence
-    )]
-    /// Emitter's sequence account. [`wormhole::post_message`] requires this
-    /// account be mutable.
-    pub wormhole_sequence: Account<'info, wormhole::SequenceTracker>,
-
-    #[account(
-        mut,
-        seeds = [
-            SEED_PREFIX_SENT,
-            &wormhole_sequence.next_value().to_le_bytes()[..]
-        ],
-        bump,
-    )]
-    /// CHECK: Wormhole Message. [`wormhole::post_message`] requires this
-    /// account be mutable.
-    pub wormhole_message: UncheckedAccount<'info>,
-
-    /// System program.
-    pub system_program: Program<'info, System>,
-
-    /// Clock sysvar.
-    pub clock: Sysvar<'info, Clock>,
-
-    /// Rent sysvar.
-    pub rent: Sysvar<'info, Rent>,
+    pub owner: Signer<'info>,
 }
 
 type WormholeVaa = wormhole::PostedVaa<WormholeMessage>;
@@ -299,14 +223,156 @@ pub struct ReceiveAndMint<'info> {
 }
 
 #[derive(Accounts)]
-pub struct SetPublicMint<'info> {
-    #[account(mut, seeds = [Config::SEED_PREFIX], bump, has_one = owner)]
+pub struct BurnAndSendMessage<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>, // signer, but not checking token account owner
+
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>, // token account to burn from
+
+    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
+    pub token_mint: Account<'info, Mint>, // the token mint
+
+    pub token_program: Program<'info, Token>,
+
+    #[account(mut)]
+    /// Payer will pay Wormhole fee to post a message.
+    pub payer: Signer<'info>,
+
+    #[account(
+        seeds = [Config::SEED_PREFIX],
+        bump,
+    )]
     pub config: Account<'info, Config>,
 
-    pub owner: Signer<'info>,
+    pub wormhole_program: Program<'info, Wormhole>,
+
+    #[account(
+        mut,
+        address = config.wormhole.bridge @ CustomError::InvalidWormholeConfig
+    )]
+    pub wormhole_bridge: Account<'info, wormhole::BridgeData>,
+
+    #[account(
+        mut,
+        address = config.wormhole.fee_collector @ CustomError::InvalidWormholeFeeCollector
+    )]
+    pub wormhole_fee_collector: Account<'info, wormhole::FeeCollector>,
+
+    #[account(
+        seeds = [WormholeEmitter::SEED_PREFIX],
+        bump,
+    )]
+    pub wormhole_emitter: Account<'info, WormholeEmitter>,
+
+    #[account(
+        mut,
+        address = config.wormhole.sequence @ CustomError::InvalidWormholeSequence
+    )]
+    pub wormhole_sequence: Account<'info, wormhole::SequenceTracker>,
+
+    #[account(
+        mut,
+        seeds = [
+            SEED_PREFIX_SENT,
+            &wormhole_sequence.next_value().to_le_bytes()[..]
+        ],
+        bump,
+    )]
+    /// CHECK: Wormhole Message. [`wormhole::post_message`] requires this
+    /// account be mutable.
+    pub wormhole_message: UncheckedAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+    pub clock: Sysvar<'info, Clock>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 /*
+#[derive(Accounts)]
+pub struct BurnWusdv<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>, // signer, but not checking token account owner
+
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>, // token account to burn from
+
+    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
+    pub token_mint: Account<'info, Mint>, // the token mint
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct SendMessage<'info> {
+    #[account(mut)]
+    /// Payer will pay Wormhole fee to post a message.
+    pub payer: Signer<'info>,
+
+    #[account(
+        seeds = [Config::SEED_PREFIX],
+        bump,
+    )]
+    /// Config account. Wormhole PDAs specified in the config are checked
+    /// against the Wormhole accounts in this context. Read-only.
+    pub config: Account<'info, Config>,
+
+    /// Wormhole program.
+    pub wormhole_program: Program<'info, Wormhole>,
+
+    #[account(
+        mut,
+        address = config.wormhole.bridge @ CustomError::InvalidWormholeConfig
+    )]
+    /// Wormhole bridge data. [`wormhole::post_message`] requires this account
+    /// be mutable.
+    pub wormhole_bridge: Account<'info, wormhole::BridgeData>,
+
+    #[account(
+        mut,
+        address = config.wormhole.fee_collector @ CustomError::InvalidWormholeFeeCollector
+    )]
+    /// Wormhole fee collector. [`wormhole::post_message`] requires this
+    /// account be mutable.
+    pub wormhole_fee_collector: Account<'info, wormhole::FeeCollector>,
+
+    #[account(
+        seeds = [WormholeEmitter::SEED_PREFIX],
+        bump,
+    )]
+    /// Program's emitter account. Read-only.
+    pub wormhole_emitter: Account<'info, WormholeEmitter>,
+
+    #[account(
+        mut,
+        address = config.wormhole.sequence @ CustomError::InvalidWormholeSequence
+    )]
+    /// Emitter's sequence account. [`wormhole::post_message`] requires this
+    /// account be mutable.
+    pub wormhole_sequence: Account<'info, wormhole::SequenceTracker>,
+
+    #[account(
+        mut,
+        seeds = [
+            SEED_PREFIX_SENT,
+            &wormhole_sequence.next_value().to_le_bytes()[..]
+        ],
+        bump,
+    )]
+    /// CHECK: Wormhole Message. [`wormhole::post_message`] requires this
+    /// account be mutable.
+    pub wormhole_message: UncheckedAccount<'info>,
+
+    /// System program.
+    pub system_program: Program<'info, System>,
+
+    /// Clock sysvar.
+    pub clock: Sysvar<'info, Clock>,
+
+    /// Rent sysvar.
+    pub rent: Sysvar<'info, Rent>,
+}
+
 #[derive(Accounts)]
 pub struct MintWusdv<'info> {
     #[account(mut)]

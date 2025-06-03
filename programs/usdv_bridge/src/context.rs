@@ -6,7 +6,7 @@ pub const SEED_PREFIX_SENT: &[u8; 4] = b"sent";
 
 use crate::{
     error::CustomError,
-    message::HelloWorldMessage,
+    message::WormholeMessage,
     state::{Config, ForeignEmitter, WormholeEmitter, Received},
 };
 
@@ -247,7 +247,7 @@ pub struct SendMessage<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-type HelloWorldVaa = wormhole::PostedVaa<HelloWorldMessage>;
+type WormholeVaa = wormhole::PostedVaa<WormholeMessage>;
 
 #[derive(Accounts)]
 #[instruction(vaa_hash: [u8; 32])]
@@ -277,7 +277,7 @@ pub struct ReceiveMessage<'info> {
     )]
     /// Verified Wormhole message account. The Wormhole program verified
     /// signatures and posted the account data here. Read-only.
-    pub posted: Account<'info, HelloWorldVaa>,
+    pub posted: Account<'info, WormholeVaa>,
 
     #[account(
         seeds = [

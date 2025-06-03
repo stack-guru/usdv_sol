@@ -1,7 +1,7 @@
 use crate::{
     context::{BurnWusdv, Initialize, MintWusdv, RegisterEmitter, SendMessage, ReceiveMessage, SEED_PREFIX_SENT},
     error::CustomError,
-    message::HelloWorldMessage,
+    message::WormholeMessage,
 };
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
@@ -97,8 +97,8 @@ pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         // emits, he can deserialize it to find the program with which
         // the emitter PDA was derived.
         let mut payload: Vec<u8> = Vec::new();
-        HelloWorldMessage::serialize(
-            &HelloWorldMessage::Alive {
+        WormholeMessage::serialize(
+            &WormholeMessage::Alive {
                 program_id: *ctx.program_id,
             },
             &mut payload,
@@ -235,7 +235,7 @@ pub fn send_message(ctx: Context<SendMessage>, message: Vec<u8>) -> Result<()> {
 
     // There is only one type of message that this example uses to
     // communicate with its foreign counterparts (payload ID == 1).
-    let payload: Vec<u8> = HelloWorldMessage::Hello { message }.try_to_vec()?;
+    let payload: Vec<u8> = WormholeMessage::Hello { message }.try_to_vec()?;
 
     wormhole::post_message(
         CpiContext::new_with_signer(
@@ -272,8 +272,8 @@ pub fn send_message(ctx: Context<SendMessage>, message: Vec<u8>) -> Result<()> {
 pub fn receive_message(ctx: Context<ReceiveMessage>, vaa_hash: [u8; 32]) -> Result<()> {
     let posted_message = &ctx.accounts.posted;
 
-    if let HelloWorldMessage::Hello { message } = posted_message.data() {
-        // HelloWorldMessage cannot be larger than the maximum size of the account.
+    if let WormholeMessage::Hello { message } = posted_message.data() {
+        // WormholeMessage cannot be larger than the maximum size of the account.
         require!(
             message.len() <= MESSAGE_MAX_LENGTH,
             CustomError::InvalidMessage,

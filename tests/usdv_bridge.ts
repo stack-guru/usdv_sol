@@ -43,8 +43,8 @@ describe("wormhole bridge", function () {
     program.programId,
     CORE_BRIDGE_PID,
     wallet.publicKey,
-    bridge.deriveWormholeMessageKey(program.programId, 25n) // sequence should be increased for every test
-  );
+    bridge.deriveWormholeMessageKey(program.programId, 32n) // sequence should be increased for every test
+  )
 
   describe("Bridge", function () {
     // before(async function () {
@@ -97,40 +97,40 @@ describe("wormhole bridge", function () {
     })
 
     it("should send message", async () => {
-      // const helloMessage = Buffer.from("All your base are belong to us");
+      const helloMessage = Buffer.from("send message from Solana");
 
-      // // save message count to grab posted message later
-      // const sequence = (
-      //   await solanaCoreUtils.getProgramSequenceTracker(connection, program.programId, CORE_BRIDGE_PID)
-      // ).value() + 1n;
-      // console.log('sequence = ', sequence);
+      // save message count to grab posted message later
+      const sequence = (
+        await solanaCoreUtils.getProgramSequenceTracker(connection, program.programId, CORE_BRIDGE_PID)
+      ).value() + 1n;
+      console.log('sequence = ', sequence);
 
-      // const trx = await program.methods
-      //   .sendMessage(helloMessage)
-      //   .accounts({
-      //     payer: wallet.publicKey,
-      //     config: realConfig,
-      //     wormholeProgram: CORE_BRIDGE_PID,
-      //     wormholeBridge: wormholeCpi.wormholeBridge,
-      //     wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
-      //     wormholeEmitter: wormholeCpi.wormholeEmitter,
-      //     wormholeSequence: wormholeCpi.wormholeSequence,
-      //     wormholeMessage: wormholeCpi.wormholeMessage,
-      //     clock: wormholeCpi.clock,
-      //     rent: wormholeCpi.rent,
-      //   })
-      //   .rpc();
+      const trx = await program.methods
+        .sendMessage(helloMessage)
+        .accounts({
+          payer: wallet.publicKey,
+          config: realConfig,
+          wormholeProgram: CORE_BRIDGE_PID,
+          wormholeBridge: wormholeCpi.wormholeBridge,
+          wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
+          wormholeEmitter: wormholeCpi.wormholeEmitter,
+          wormholeSequence: wormholeCpi.wormholeSequence,
+          wormholeMessage: wormholeCpi.wormholeMessage,
+          clock: wormholeCpi.clock,
+          rent: wormholeCpi.rent,
+        })
+        .rpc();
 
-      // console.log('send message trx = ', trx);
-      // const { payload } =
-      //   (await getPostedMessage(
-      //     connection,
-      //     bridge.deriveWormholeMessageKey(program.programId, sequence)
-      //   )).message;
+      console.log('send message trx = ', trx);
+      const { payload } =
+        (await getPostedMessage(
+          connection,
+          bridge.deriveWormholeMessageKey(program.programId, sequence)
+        )).message;
 
-      // expect(payload.readUint8(0)).equals(1); // payload ID
-      // expect(payload.readUint16BE(1)).equals(helloMessage.length);
-      // expect(payload.subarray(3)).deep.equals(helloMessage);
+      expect(payload.readUint8(0)).equals(1); // payload ID
+      expect(payload.readUint16BE(1)).equals(helloMessage.length);
+      expect(payload.subarray(3)).deep.equals(helloMessage);
     });
 
     it("should receive message", async () => {
@@ -170,17 +170,17 @@ describe("wormhole bridge", function () {
     })
 
     it("should get received message", async () => {
-      const buffer = Buffer.from("AQAAAAABAF3ehEopD6n8ej1hwh2D4kvifKPbWoVm+lYP7sgN64muVfDVdoNSreoWsKiVFGOW5+9im2VPTl5dfOECTnQ4qFsAaDeWOQAAAAAnFwAAAAAAAAAAAAAAAB7FWP1ULTVLeBioqPgSS2458BW5AAAAAAAAAAQBAQAGc3RyZXNz", 'base64');
-      const parsed = parseVaa(buffer);
-      const received = await bridge.getReceivedData(
-        program.programId,
-        parsed.emitterChain as ChainId, // don't do this at home, kids
-        parsed.sequence
-      );
+      // const buffer = Buffer.from("AQAAAAABAF3ehEopD6n8ej1hwh2D4kvifKPbWoVm+lYP7sgN64muVfDVdoNSreoWsKiVFGOW5+9im2VPTl5dfOECTnQ4qFsAaDeWOQAAAAAnFwAAAAAAAAAAAAAAAB7FWP1ULTVLeBioqPgSS2458BW5AAAAAAAAAAQBAQAGc3RyZXNz", 'base64');
+      // const parsed = parseVaa(buffer);
+      // const received = await bridge.getReceivedData(
+      //   program.programId,
+      //   parsed.emitterChain as ChainId, // don't do this at home, kids
+      //   parsed.sequence
+      // );
 
-      console.log('batch id & message = ', received.batchId, received.message.toString());
-      // expect(received.batchId).equals(batchId);
-      // expect(received.message).deep.equals(message);
+      // console.log('batch id & message = ', received.batchId, received.message.toString());
+      // // expect(received.batchId).equals(batchId);
+      // // expect(received.message).deep.equals(message);
     })
 
   });

@@ -234,7 +234,7 @@ pub fn burn_and_send(ctx: Context<BurnAndSendMessage>, amount: u64) -> Result<()
 
     // Convert `amount` to message payload
     let payload: Vec<u8> = WormholeMessage::Hello {
-        message: amount.to_le_bytes().to_vec(),
+        message: amount.to_string().into_bytes(),
     }
     .try_to_vec()?;
 

@@ -34,4 +34,10 @@ pub enum CustomError {
 
     #[msg("Public mint is disabled.")]
     PublicMintDisabled,
+
+    #[msg("Amount too small to mint after deducting fee.")]
+    AmountTooSmall,
+
+    #[msg("Amount can't be zero.")]
+    InvalidAmount,
 }

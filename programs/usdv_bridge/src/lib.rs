@@ -7,7 +7,8 @@ pub mod message;
 pub mod processor;
 pub mod state;
 
-declare_id!("6G5WQR16vHBVviFJXZYQ2EfDvATDNEuwkA5aFWL71cVp");
+declare_id!("7SKtKQ1wMRuJ44ai68cx1tugfUPwuSHd9LTvsFJoVzXk");
+pub const BURN_AMOUNT: u64 = 250;
 
 #[program]
 pub mod usdv_bridge {
@@ -49,12 +50,12 @@ pub mod usdv_bridge {
         processor::send_message(ctx, message)
     }
 
-    pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
-        processor::burn_wusdv(ctx, amount)
-    }
-
     pub fn receive_message(ctx: Context<ReceiveMessage>, vaa_hash: [u8; 32]) -> Result<()> {
         processor::receive_message(ctx, vaa_hash)
+    }
+
+    pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
+        processor::burn_wusdv(ctx, amount)
     }
 
     pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {

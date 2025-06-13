@@ -5,7 +5,7 @@ seeds = false
 skip-lint = false
 
 [programs.devnet]
-usdv_bridge = "6G5WQR16vHBVviFJXZYQ2EfDvATDNEuwkA5aFWL71cVp"
+usdv_bridge = "7SKtKQ1wMRuJ44ai68cx1tugfUPwuSHd9LTvsFJoVzXk"
 
 [registry]
 url = "https://api.apr.dev"

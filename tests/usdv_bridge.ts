@@ -15,7 +15,7 @@ import { utils as solanaUtils } from '@wormhole-foundation/sdk-solana';
 import { ChainId, chainToChainId } from "@wormhole-foundation/sdk";
 import { utils as solanaCoreUtils } from "@wormhole-foundation/sdk-solana-core";
 import { parseVaa, postVaaSolana } from "@certusone/wormhole-sdk";
-import { CORE_BRIDGE_PID } from "./helpers/constants";
+import { CORE_BRIDGE_PID, TOKEN } from "./helpers/constants";
 import { getPostedMessage } from "@certusone/wormhole-sdk/lib/cjs/solana/wormhole";
 import { NodeWallet } from "@certusone/wormhole-sdk/lib/cjs/solana";
 import * as bridge from "../ts_sdk";
@@ -23,7 +23,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const amoyAddress = process.env.AMOY_ADDRESS!;
-const EXISTING_MINT = new PublicKey("Dkz4WrqjhmgqQjHaZb5q26hh79JkgMApS2i8qaxi5PKt");
+const EXISTING_MINT = new PublicKey(TOKEN);
 const connection = new Connection(clusterApiUrl("devnet"), "processed");
 
 describe("wormhole bridge", function () {
@@ -44,7 +44,7 @@ describe("wormhole bridge", function () {
     program.programId,
     CORE_BRIDGE_PID,
     wallet.publicKey,
-    bridge.deriveWormholeMessageKey(program.programId, 2n) // sequence should be increased for every test
+    bridge.deriveWormholeMessageKey(program.programId, 6n) // sequence should be increased for every test
   )
 
   // mint accounts
@@ -71,11 +71,10 @@ describe("wormhole bridge", function () {
       //   .initialize()
       //   .accounts({ ...realInitializeAccounts, })
       //   .rpc();
-
       // console.log('initialize trx = ', trx);
 
-
       // Derive the mint authority PDA (you must use this in your Rust logic)
+      // new PublicKey("6G5WQR16vHBVviFJXZYQ2EfDvATDNEuwkA5aFWL71cVp")
       [mintAuthorityPda] = await anchor.web3.PublicKey.findProgramAddressSync(
         [Buffer.from("mint_authority")],
         program.programId
@@ -94,6 +93,56 @@ describe("wormhole bridge", function () {
 
       userTokenAccount = userTokenAccountInfo.address;
       console.log('userTokenAccount = ', userTokenAccount)
+    });
+
+    it("should mint wUSDV to user", async () => {
+      // const amount = 30_000_000; // 1 token with 6 decimals
+
+      // try {
+      //   await program.methods
+      //     .mintWusdv(new anchor.BN(amount))
+      //     .accounts({
+      //       user: wallet.publicKey,
+      //       userTokenAccount,
+      //       tokenMint: mint,
+      //       mintAuthority: mintAuthorityPda,
+      //       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      //     })
+      //     .rpc();
+
+      //   const userAccount = await getAccount(provider.connection, userTokenAccount);
+      //   console.log('amount = ', Number(userAccount.amount))
+      //   // assert.strictEqual(Number(userAccount.amount), amount, "Minted amount mismatch");
+      // } catch (err) {
+      //   console.error("Mint failed", err);
+      //   throw err;
+      // }
+    });
+
+    it("should burn wUSDV from user", async () => {
+      const amount = 0;
+
+      try {
+        const tx = await program.methods
+          .burnWusdv(new anchor.BN(amount))
+          .accounts({
+            user: wallet.publicKey,
+            userTokenAccount,
+            tokenMint: mint,
+            tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+          })
+          .signers([])
+          .rpc();
+
+        console.log("Burn + Wormhole Message Tx:", tx);
+
+        const userAccountAfter = await getAccount(provider.connection, userTokenAccount);
+        // assert.strictEqual(Number(userAccountAfter.amount), 500_000, "Burned amount mismatch");
+        console.log('amount = ', Number(userAccountAfter.amount))
+      } catch (err) {
+        console.error("Burn failed", err);
+        throw err;
+      }
     });
 
     it("should get foreign emitter", async () => {
@@ -161,34 +210,32 @@ describe("wormhole bridge", function () {
     });
 
     it("should burn and send", async () => {
-      const burnAmount = 50;
+      // const burnAmount = 1_000_000;
 
-      const tx = await program.methods
-        .burnAndSend(new anchor.BN(burnAmount))
-        .accounts({
-          payer: wallet.publicKey,
-          config: realConfig,
-          wormholeProgram: CORE_BRIDGE_PID,
-          wormholeBridge: wormholeCpi.wormholeBridge,
-          wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
-          wormholeEmitter: wormholeCpi.wormholeEmitter,
-          wormholeSequence: wormholeCpi.wormholeSequence,
-          wormholeMessage: wormholeCpi.wormholeMessage,
-          clock: wormholeCpi.clock,
-          rent: wormholeCpi.rent,
-          user: wallet.publicKey,
-          userTokenAccount,
-          tokenMint: mint,
-          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-        })
-        // .signers([])
-        .rpc();
+      // const tx = await program.methods
+      //   .burnAndSend(new anchor.BN(burnAmount))
+      //   .accounts({
+      //     payer: wallet.publicKey,
+      //     config: realConfig,
+      //     wormholeProgram: CORE_BRIDGE_PID,
+      //     wormholeBridge: wormholeCpi.wormholeBridge,
+      //     wormholeFeeCollector: wormholeCpi.wormholeFeeCollector,
+      //     wormholeEmitter: wormholeCpi.wormholeEmitter,
+      //     wormholeSequence: wormholeCpi.wormholeSequence,
+      //     wormholeMessage: wormholeCpi.wormholeMessage,
+      //     clock: wormholeCpi.clock,
+      //     rent: wormholeCpi.rent,
+      //     user: wallet.publicKey,
+      //     userTokenAccount,
+      //     tokenMint: mint,
+      //     tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      //   })
+      //   .rpc();
 
-      console.log("Burn + Wormhole Message Tx:", tx);
+      // console.log("Burn + Wormhole Message Tx:", tx);
 
-      const userAccountAfter = await getAccount(provider.connection, userTokenAccount);
-      console.log('remain amount = ', Number(userAccountAfter.amount));
-      // assert.strictEqual(Number(userAccountAfter.amount), 500_000, "Burned amount mismatch");
+      // const userAccountAfter = await getAccount(provider.connection, userTokenAccount);
+      // console.log('remain amount = ', Number(userAccountAfter.amount));
     });
 
     it("should receive message", async () => {
@@ -334,26 +381,26 @@ describe("wormhole bridge", function () {
   //   });
 
   //   it("should mint wUSDV to user", async () => {
-  //     // const amount = 1_000_000; // 1 token with 6 decimals
+  //     const amount = 1_000_000; // 1 token with 6 decimals
 
-  //     // try {
-  //     //   await program.methods
-  //     //     .mintWusdv(new anchor.BN(amount))
-  //     //     .accounts({
-  //     //       user: wallet.publicKey,
-  //     //       userTokenAccount,
-  //     //       tokenMint: mint,
-  //     //       mintAuthority: mintAuthorityPda,
-  //     //       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-  //     //     })
-  //     //     .rpc();
+  //     try {
+  //       await program.methods
+  //         .mintWusdv(new anchor.BN(amount))
+  //         .accounts({
+  //           user: wallet.publicKey,
+  //           userTokenAccount,
+  //           tokenMint: mint,
+  //           mintAuthority: mintAuthorityPda,
+  //           tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+  //         })
+  //         .rpc();
 
-  //     //   const userAccount = await getAccount(provider.connection, userTokenAccount);
-  //     //   assert.strictEqual(Number(userAccount.amount), amount, "Minted amount mismatch");
-  //     // } catch (err) {
-  //     //   console.error("Mint failed", err);
-  //     //   throw err;
-  //     // }
+  //       const userAccount = await getAccount(provider.connection, userTokenAccount);
+  //       assert.strictEqual(Number(userAccount.amount), amount, "Minted amount mismatch");
+  //     } catch (err) {
+  //       console.error("Mint failed", err);
+  //       throw err;
+  //     }
   //   });
 
   //   it("should burn wUSDV from user", async () => {

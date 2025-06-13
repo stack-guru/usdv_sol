@@ -1,4 +1,5 @@
 use crate::state::received::MESSAGE_MAX_LENGTH;
+use crate::BURN_AMOUNT;
 use crate::{
     context::{
         BurnAndSendMessage, Initialize, ReceiveAndMint, RegisterEmitter, SetPublicMint,
@@ -191,6 +192,9 @@ pub fn receive_and_mint(ctx: Context<ReceiveAndMint>, vaa_hash: [u8; 32]) -> Res
         received.message = message.clone();
 
         msg!("minting... {} wUSDV", amount);
+        require!(amount > BURN_AMOUNT, CustomError::AmountTooSmall);
+        let mint_amount = amount - BURN_AMOUNT;
+
         // 4. Mint the tokens using PDA
         let seeds: &[&[u8]] = &[b"mint_authority", &[ctx.bumps.mint_authority]];
 
@@ -203,9 +207,9 @@ pub fn receive_and_mint(ctx: Context<ReceiveAndMint>, vaa_hash: [u8; 32]) -> Res
             },
         );
 
-        mint_to(cpi_ctx.with_signer(&[seeds]), amount)?;
+        mint_to(cpi_ctx.with_signer(&[seeds]), mint_amount)?;
 
-        msg!("Successfully received and minted {} wUSDV", amount);
+        msg!("Successfully received and minted {} wUSDV", mint_amount);
         Ok(())
     } else {
         Err(CustomError::InvalidMessage.into())
@@ -220,6 +224,8 @@ pub fn set_public_mint(ctx: Context<SetPublicMint>, is_mintable: bool) -> Result
 }
 
 pub fn burn_and_send(ctx: Context<BurnAndSendMessage>, amount: u64) -> Result<()> {
+    require!(amount > 0, CustomError::InvalidAmount);
+
     let burn_ctx = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         Burn {
@@ -229,8 +235,8 @@ pub fn burn_and_send(ctx: Context<BurnAndSendMessage>, amount: u64) -> Result<()
         },
     );
 
-    burn(burn_ctx, amount)?;
-    msg!("Successfully burned {} wUSDV", amount);
+    burn(burn_ctx, amount + BURN_AMOUNT)?;
+    msg!("Successfully burned {} wUSDV", amount + BURN_AMOUNT);
 
     // Convert `amount` to message payload
     let payload: Vec<u8> = WormholeMessage::Hello {
@@ -293,7 +299,10 @@ pub fn burn_and_send(ctx: Context<BurnAndSendMessage>, amount: u64) -> Result<()
 pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {
     // Ensure the mint authority is the bridge program
     // let mint_authority = &ctx.accounts.mint_authority;
+    require!(amount > BURN_AMOUNT, CustomError::AmountTooSmall);
+
     let seeds: &[&[u8]] = &[b"mint_authority", &[ctx.bumps.mint_authority]];
+    let mint_amount = amount - BURN_AMOUNT;
 
     let cpi_ctx = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
@@ -304,13 +313,15 @@ pub fn mint_wusdv(ctx: Context<MintWusdv>, amount: u64) -> Result<()> {
         },
     );
 
-    mint_to(cpi_ctx.with_signer(&[seeds]), amount)?;
+    mint_to(cpi_ctx.with_signer(&[seeds]), mint_amount)?;
 
-    msg!("Successfully minted {} wUSDV", amount);
+    msg!("Successfully minted {} wUSDV", mint_amount);
     Ok(())
 }
 
 pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
+    require!(amount > 0, CustomError::InvalidAmount);
+
     let cpi_ctx = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         Burn {
@@ -320,9 +331,9 @@ pub fn burn_wusdv(ctx: Context<BurnWusdv>, amount: u64) -> Result<()> {
         },
     );
 
-    burn(cpi_ctx, amount)?;
+    burn(cpi_ctx, amount + BURN_AMOUNT)?;
 
-    msg!("Successfully burned {} wUSDV", amount);
+    msg!("Successfully burned {} wUSDV", amount + BURN_AMOUNT);
 
     Ok(())
 }

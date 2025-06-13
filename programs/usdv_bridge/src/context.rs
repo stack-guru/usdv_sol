@@ -290,6 +290,27 @@ pub struct BurnAndSendMessage<'info> {
 
 /*
 #[derive(Accounts)]
+pub struct MintWusdv<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
+    pub token_mint: Account<'info, Mint>,
+
+    #[account(
+        seeds = [b"mint_authority"], // use your actual seeds here
+        bump
+    )]
+    /// CHECK: This will be verified in the handler
+    pub mint_authority: AccountInfo<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
 pub struct BurnWusdv<'info> {
     #[account(mut)]
     pub user: Signer<'info>, // signer, but not checking token account owner
@@ -371,27 +392,6 @@ pub struct SendMessage<'info> {
 
     /// Rent sysvar.
     pub rent: Sysvar<'info, Rent>,
-}
-
-#[derive(Accounts)]
-pub struct MintWusdv<'info> {
-    #[account(mut)]
-    pub user: Signer<'info>,
-
-    #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>,
-
-    #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
-    pub token_mint: Account<'info, Mint>,
-
-    #[account(
-        seeds = [b"mint_authority"], // use your actual seeds here
-        bump
-    )]
-    /// CHECK: This will be verified in the handler
-    pub mint_authority: AccountInfo<'info>,
-
-    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]

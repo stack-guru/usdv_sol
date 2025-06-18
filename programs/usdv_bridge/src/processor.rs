@@ -10,7 +10,8 @@ use crate::{
 };
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
-use anchor_spl::token::{burn, mint_to, Burn, MintTo};
+// use anchor_spl::token::{burn, mint_to, Burn, MintTo};
+use anchor_spl::token_interface::{burn, mint_to, Burn, MintTo};
 use wormhole_anchor_sdk::wormhole;
 
 pub fn initialize(ctx: Context<Initialize>) -> Result<()> {

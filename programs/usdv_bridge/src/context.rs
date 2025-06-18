@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+// use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::token_interface::{spl_token_2022, Mint, Token2022, TokenAccount};
 use wormhole_anchor_sdk::wormhole::{self, program::Wormhole};
 
 pub const SEED_PREFIX_SENT: &[u8; 4] = b"sent";
@@ -206,10 +207,10 @@ pub struct ReceiveAndMint<'info> {
 
     // MINT-related accounts
     #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>,
+    pub user_token_account: InterfaceAccount<'info, TokenAccount>,
 
     #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
-    pub token_mint: Account<'info, Mint>,
+    pub token_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         seeds = [b"mint_authority"],
@@ -218,7 +219,8 @@ pub struct ReceiveAndMint<'info> {
     /// CHECK: Verified in CPI context
     pub mint_authority: AccountInfo<'info>,
 
-    pub token_program: Program<'info, Token>,
+    #[account(address = spl_token_2022::id())]
+    pub token_program: Program<'info, Token2022>,
     pub system_program: Program<'info, System>,
 }
 
@@ -228,12 +230,13 @@ pub struct BurnAndSendMessage<'info> {
     pub user: Signer<'info>, // signer, but not checking token account owner
 
     #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>, // token account to burn from
+    pub user_token_account: InterfaceAccount<'info, TokenAccount>, // token account to burn from
 
     #[account(mut, constraint = token_mint.decimals == 6 @ CustomError::InvalidMintDecimals)]
-    pub token_mint: Account<'info, Mint>, // the token mint
+    pub token_mint: InterfaceAccount<'info, Mint>, // the token mint
 
-    pub token_program: Program<'info, Token>,
+    #[account(address = spl_token_2022::id())]
+    pub token_program: Program<'info, Token2022>,
 
     #[account(mut)]
     /// Payer will pay Wormhole fee to post a message.
